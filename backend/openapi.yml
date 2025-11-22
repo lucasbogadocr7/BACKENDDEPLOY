@@ -1,0 +1,951 @@
+
+openapi: 3.0.1
+info:
+  title: API para nuestro TP
+  description: Esta API se encarga de manejar los productos, usuarios y pedidos de nuestro sitio web.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: health
+    description: Endpoint para verificar el estado del servicio.
+  - name: hello
+    description: Endpoint de prueba que retorna un mensaje de saludo.
+  - name: usuarios
+    description: Este endpoint maneja la información relacionada a los usuarios.
+  - name: productos
+    description: Este endpoint maneja la información relacionada a los productos.
+  - name: pedidos
+    description: Este endpoint maneja la información relacionada a los pedidos.
+  - name: notificaciones
+    description: este endpoint maneja la informacion relacionada a las notificaciones.
+
+paths:
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Verifica el estado del servicio
+      description: Retorna un texto confirmando que el servicio está funcionando.
+      responses:
+        '200':
+          description: Servicio funcionando
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /hello:
+    get:
+      tags:
+        - hello
+      summary: Devuelve un saludo
+      description: Retorna un mensaje de saludo para probar la API.
+      responses:
+        '200':
+          description: Mensaje de saludo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    
+
+  /usuarios:
+    post:
+      tags:
+        - usuarios
+      summary: Inserta un nuevo usuario en la base de datos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  description: Nombre del usuario
+                email:
+                  type: string
+                  description: Correo electrónico del usuario
+                telefono:
+                  type: string
+                  description: Número de teléfono del usuario
+                tipo:
+                  type: string
+                  description: Tipo de usuario (por ejemplo, 'Comprador','Vendedor' o admin)
+      responses:
+        '201':
+          description: Usuario creado correctamente
+        '400':
+          description: Error en la solicitud
+
+    get:
+      tags:
+        - usuarios
+      summary: Obtiene todos los usuarios registrados
+      description: Devuelve una lista de todos los usuarios disponibles en la base de datos.
+      responses:
+        '200':
+          description: Lista de usuarios obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: ID del usuario
+                    nombre:
+                      type: string
+                    email:
+                      type: string
+                    telefono:
+                      type: string
+                    tipo:
+                      type: string
+        '500':
+          description: Error interno del servidor
+
+  /productos:
+    post:
+      tags:
+        - productos
+      summary: Crea un nuevo producto
+      description: Permite a un vendedor crear un nuevo producto en la plataforma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vendedor
+                - titulo
+                - precio
+                - moneda
+                - stock
+              properties:
+                vendedor:
+                  type: string
+                  description: ID del vendedor que crea el producto
+                  example: "68e671f4cce3dcb23098e9f3"
+                titulo:
+                  type: string
+                  description: Título del producto
+                 
+                descripcion:
+                  type: string
+                  description: Descripción detallada del producto
+              
+                categorias:
+                  type: array
+                  items:
+                    type: string
+                  description: Lista de categorías del producto
+               
+                precio:
+                  type: number
+                  description: Precio del producto
+                  example: 1200000
+                moneda:
+                  type: string
+                  enum: ["Peso_arg", "Dolar_usa", "Real"]
+                  description: Moneda del precio
+                  example: "Peso_arg"
+                stock:
+                  type: integer
+                  minimum: 0
+                  description: Cantidad disponible en stock
+                  
+                fotos:
+                  type: array
+                  items:
+                    type: string
+                  description: URLs de las fotos del producto
+                 
+                archivo:
+                  type: string
+                  description: Archivo adjunto del producto
+                
+      responses:
+        '201':
+          description: Producto creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: ID único del producto
+                  vendedor:
+                    type: object
+                    description: Información del vendedor
+                  titulo:
+                    type: string
+                  descripcion:
+                    type: string
+                  categorias:
+                    type: array
+                    items:
+                      type: string
+                  precio:
+                    type: number
+                  moneda:
+                    type: string
+                  stock:
+                    type: integer
+                  fotos:
+                    type: array
+                    items:
+                      type: string
+                  archivo:
+                    type: string
+                  cantidadVendida:
+                    type: integer
+                    default: 0
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Error en la validación de datos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Validation Error"
+                  message:
+                    type: string
+                    example: "Los datos proporcionados no son válidos"
+
+    get:
+      tags:
+        - productos
+      summary: Lista productos con filtros
+      description: Obtiene una lista de productos con opciones de filtrado, paginación y ordenamiento
+      parameters:
+        - name: vendedorId
+          in: query
+          required: true
+          description: ID del vendedor para filtrar productos
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439011"
+        - name: nombre
+          in: query
+          required: false
+          description: Filtrar por nombre/título del producto
+          schema:
+            type: string
+            
+        - name: descripcion
+          in: query
+          required: false
+          description: Filtrar por descripción del producto
+          schema:
+            type: string
+           
+        - name: categoria
+          in: query
+          required: false
+          description: Filtrar por categoría
+          schema:
+            type: string
+            
+        - name: precioMin
+          in: query
+          required: false
+          description: Precio mínimo para filtrar
+          schema:
+            type: string
+          
+        - name: precioMax
+          in: query
+          required: false
+          description: Precio máximo para filtrar
+          schema:
+            type: string
+            
+        - name: page
+          in: query
+          required: false
+          description: Número de página para paginación
+          schema:
+            type: string
+            default: "1"
+            example: "1"
+        - name: limit
+          in: query
+          required: false
+          description: Cantidad de productos por página
+          schema:
+            type: string
+            default: "10"
+           
+        - name: ordenamiento
+          in: query
+          required: false
+          description: Criterio de ordenamiento
+          schema:
+            type: string
+            enum: ["precio_asc", "precio_desc", "mas_vendido"]
+            
+      responses:
+        '200':
+          description: Lista de productos obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      description: ID único del producto
+                    vendedor:
+                      type: object
+                      description: Información del vendedor
+                      properties:
+                        _id:
+                          type: string
+                        nombre:
+                          type: string
+                        email:
+                          type: string
+                    titulo:
+                      type: string
+                      description: Título del producto
+                    descripcion:
+                      type: string
+                      description: Descripción del producto
+                    categorias:
+                      type: array
+                      items:
+                        type: string
+                      description: Categorías del producto
+                    precio:
+                      type: number
+                      description: Precio del producto
+                    moneda:
+                      type: string
+                      description: Moneda del precio
+                    stock:
+                      type: integer
+                      description: Stock disponible
+                    fotos:
+                      type: array
+                      items:
+                        type: string
+                      description: URLs de las fotos
+                    archivo:
+                      type: string
+                      description: Archivo adjunto
+                    cantidadVendida:
+                      type: integer
+                      description: Cantidad vendida
+                    createdAt:
+                      type: string
+                      format: date-time
+                    updatedAt:
+                      type: string
+                      format: date-time
+        '400':
+          description: Error en los parámetros de consulta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Validation Error"
+                  message:
+                    type: string
+                    example: "Parámetros de consulta inválidos"
+        '500':
+          description: Error interno del servidor
+
+  /pedidos:
+    post:
+      tags:
+        - pedidos
+      summary: Crea un nuevo pedido
+      description: Permite a un comprador crear un nuevo pedido con productos específicos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - comprador
+                - items
+                - moneda
+                - direccionEntrega
+              properties:
+                comprador:
+                  type: string
+                  description: ID del comprador que realiza el pedido
+                  example: "68e671da64347b37946fe51b"
+                items:
+                  type: array
+                  minItems: 1
+                  description: Lista de productos en el pedido
+                  items:
+                    type: object
+                    required:
+                      - producto
+                      - cantidad
+                    properties:
+                      producto:
+                        type: string
+                        description: ID del producto
+                        example: "68e672cc019f764ed25b027b"
+                      cantidad:
+                        type: integer
+                        minimum: 1
+                        description: Cantidad del producto
+                        example: 2
+                moneda:
+                  type: string
+                  enum: ["Peso_arg", "Dolar_usa", "Real"]
+                  description: Moneda del pedido
+                  example: "Peso_arg"
+                direccionEntrega:
+                  type: object
+                  required:
+                    - calle
+                    - altura
+                    - codigoPostal
+                    - ciudad
+                    - provincia
+                    - pais
+                  properties:
+                    calle:
+                      type: string
+                      description: Nombre de la calle
+                      example: "Av. Corrientes"
+                    altura:
+                      type: integer
+                      minimum: 1
+                      description: Número de la calle
+                      example: 1234
+                    piso:
+                      type: integer
+                      minimum: 1
+                      description: Número de piso (opcional)
+                      example: 5
+                    departamento:
+                      type: string
+                      maxLength: 5
+                      description: Número de departamento (opcional)
+                      example: "A"
+                    codigoPostal:
+                      type: string
+                      description: Código postal
+                      example: "1043"
+                    ciudad:
+                      type: string
+                      description: Ciudad
+                      example: "Buenos Aires"
+                    provincia:
+                      type: string
+                      description: Provincia
+                      example: "Buenos Aires"
+                    pais:
+                      type: string
+                      description: País
+                      example: "Argentina"
+                    lat:
+                      type: string
+                      maxLength: 20
+                      description: Latitud (opcional)
+                      example: "-34.6037"
+                    lon:
+                      type: string
+                      maxLength: 20
+                      description: Longitud (opcional)
+                      example: "-58.3816"
+      responses:
+        '201':
+          description: Pedido creado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: ID único del pedido
+                  comprador:
+                    type: object
+                    description: Información del comprador
+                    properties:
+                      _id:
+                        type: string
+                      nombre:
+                        type: string
+                      email:
+                        type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        producto:
+                          type: object
+                          description: Información del producto
+                        cantidad:
+                          type: integer
+                        precioUnitario:
+                          type: number
+                  total:
+                    type: number
+                    description: Total del pedido
+                  moneda:
+                    type: string
+                    description: Moneda del pedido
+                  direccionEntrega:
+                    type: object
+                    description: Dirección de entrega
+                    properties:
+                      calle:
+                        type: string
+                      altura:
+                        type: integer
+                      piso:
+                        type: integer
+                      departamento:
+                        type: string
+                      codigoPostal:
+                        type: string
+                      ciudad:
+                        type: string
+                      provincia:
+                        type: string
+                      pais:
+                        type: string
+                      lat:
+                        type: string
+                      lon:
+                        type: string
+                  estado:
+                    type: string
+                    enum: ["Pendiente", "Confirmado", "En_preparacion", "Enviado", "Entregado", "Cancelado"]
+                    description: Estado actual del pedido
+                  fechaCreacion:
+                    type: string
+                    format: date-time
+                    description: Fecha de creación del pedido
+                  historialEstados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        fecha:
+                          type: string
+                          format: date-time
+                        estado:
+                          type: string
+                        usuario:
+                          type: string
+                        motivo:
+                          type: string
+        '400':
+          description: Error en la validación de datos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Validation Error"
+                  message:
+                    type: string
+                    example: "Los datos proporcionados no son válidos"
+        '500':
+          description: Error interno del servidor
+
+  /pedidos/{id}/cancelar:
+    patch:
+      tags:
+        - pedidos
+      summary: Cancela un pedido
+      description: Permite cancelar un pedido existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del pedido a cancelar
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439013"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idUsuario
+              properties:
+                idUsuario:
+                  type: string
+                  description: ID del usuario que cancela el pedido
+                  example: "507f1f77bcf86cd799439011"
+                motivo:
+                  type: string
+                  description: Motivo de la cancelación (opcional)
+                  example: "Cambio de opinión"
+      responses:
+        '200':
+          description: Pedido cancelado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  comprador:
+                    type: object
+                  items:
+                    type: array
+                  total:
+                    type: number
+                  moneda:
+                    type: string
+                  direccionEntrega:
+                    type: object
+                  estado:
+                    type: string
+                    example: "Cancelado"
+                  fechaCreacion:
+                    type: string
+                    format: date-time
+                  historialEstados:
+                    type: array
+        '400':
+          description: Error en la validación de datos
+        '404':
+          description: Pedido no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /pedidos/{id}/enviar:
+    patch:
+      tags:
+        - pedidos
+      summary: Marca un pedido como enviado
+      description: Permite marcar un pedido como enviado
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del pedido a marcar como enviado
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439013"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idUsuario
+              properties:
+                idUsuario:
+                  type: string
+                  description: ID del usuario que marca como enviado
+                  example: "507f1f77bcf86cd799439011"
+                motivo:
+                  type: string
+                  description: Motivo del envío (opcional)
+                  example: "Enviado por correo"
+      responses:
+        '200':
+          description: Pedido marcado como enviado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  estado:
+                    type: string
+                    example: "Enviado"
+                  historialEstados:
+                    type: array
+        '400':
+          description: Error en la validación de datos
+        '404':
+          description: Pedido no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /pedidos/{id}/confirmar:
+    patch:
+      tags:
+        - pedidos
+      summary: Confirma un pedido
+      description: Permite confirmar un pedido pendiente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del pedido a confirmar
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439013"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idUsuario
+              properties:
+                idUsuario:
+                  type: string
+                  description: ID del usuario que confirma el pedido
+                  example: "507f1f77bcf86cd799439011"
+                motivo:
+                  type: string
+                  description: Motivo de la confirmación (opcional)
+                  example: "Stock disponible"
+      responses:
+        '200':
+          description: Pedido confirmado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  estado:
+                    type: string
+                    example: "Confirmado"
+                  historialEstados:
+                    type: array
+        '400':
+          description: Error en la validación de datos
+        '404':
+          description: Pedido no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /pedidos/usuarios/{id}:
+    get:
+      tags:
+        - pedidos
+      summary: Obtiene el historial de pedidos de un usuario
+      description: Devuelve todos los pedidos realizados por un usuario específico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del usuario
+          schema:
+            type: string
+            example: "507f1f77bcf86cd799439011"
+      responses:
+        '200':
+          description: Historial de pedidos obtenido correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      description: ID único del pedido
+                    comprador:
+                      type: object
+                      description: Información del comprador
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          producto:
+                            type: object
+                            description: Información del producto
+                          cantidad:
+                            type: integer
+                          precioUnitario:
+                            type: number
+                    total:
+                      type: number
+                      description: Total del pedido
+                    moneda:
+                      type: string
+                      description: Moneda del pedido
+                    direccionEntrega:
+                      type: object
+                      description: Dirección de entrega
+                    estado:
+                      type: string
+                      enum: ["Pendiente", "Confirmado", "En_preparacion", "Enviado", "Entregado", "Cancelado"]
+                      description: Estado actual del pedido
+                    fechaCreacion:
+                      type: string
+                      format: date-time
+                      description: Fecha de creación del pedido
+                    historialEstados:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          fecha:
+                            type: string
+                            format: date-time
+                          estado:
+                            type: string
+                          usuario:
+                            type: string
+                          motivo:
+                            type: string
+        '400':
+          description: Error en la validación del ID
+        '404':
+          description: No se encontraron pedidos para ese usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No se encontraron pedidos para ese usuario."
+        '500':
+          description: Error interno del servidor
+
+  /notificaciones/usuarios/{id}:
+    get:
+      tags:
+        - notificaciones
+      summary: Obtiene las notificaciones de un usuario
+      description: Usa el query param 'leida=true' para traer las leídas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del usuario
+          schema:
+            type: string
+        - name: leida
+          in: query
+          required: false
+          description: Filtra por estado de lectura
+          schema:
+            type: string
+            enum: ["true", "false"]
+      responses:
+        '200':
+          description: Lista de notificaciones obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                    usuarioDestino:
+                      type: object
+                    mensaje:
+                      type: string
+                    fechaAlta:
+                      type: string
+                      format: date-time
+                    leida:
+                      type: boolean
+                    fechaLeida:
+                      type: string
+                      format: date-time
+                    pedido:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
+                    updatedAt:
+                      type: string
+                      format: date-time
+        '400':
+          description: Error en la solicitud
+        '500':
+          description: Error interno del servidor
+
+  /notificaciones/{id}/leida:
+    patch:
+      tags:
+        - notificaciones
+      summary: Marca una notificación como leída
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la notificación
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notificación marcada como leída
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  usuarioDestino:
+                    type: object
+                  mensaje:
+                    type: string
+                  fechaAlta:
+                    type: string
+                    format: date-time
+                  leida:
+                    type: boolean
+                    example: true
+                  fechaLeida:
+                    type: string
+                    format: date-time
+                  pedido:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '404':
+          description: Notificación no encontrada
+        '500':
+          description: Error interno del servidor
+
